@@ -105,8 +105,8 @@ class WelkeDagenWerkenController extends Controller
     public function GetHolidays($year)
     {
         $newYearsDay = new Carbon("$year-01-01");
-        $goodFriday = new Carbon("$year-04-02");
         $firstEasterday = $this->GetEasterDate($year);
+        $goodFriday = $this->GetGoodFriday(clone $firstEasterday);
         $secondEasterday = clone $firstEasterday;
         $secondEasterday->addDay();
         $kingsDay = $this->GetKingsDay(new Carbon("$year-04-27"));
@@ -157,6 +157,16 @@ class WelkeDagenWerkenController extends Controller
         $easterDate = new Carbon("$A-$M-$P");
 
         return $easterDate;
+    }
+
+    public function GetGoodFriday(Carbon $date)
+    {
+        while($date->dayOfWeek != 5)
+        {
+            $date->addDays(-1);
+        }
+
+        return $date;
     }
 
     public function GetKingsDay(Carbon $date)
