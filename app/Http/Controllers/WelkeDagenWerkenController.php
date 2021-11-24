@@ -23,23 +23,10 @@ class WelkeDagenWerkenController extends Controller
                 $day['workHours']++;
                 $remainingHoursToWork--;
             }
-            $message = "Werk $day[workHours] uur op $day[name].";
-            var_dump($message);
             $index++;
         }
 
-        foreach($week as $day)
-        {
-            $message = "Er zijn $day[freeDays] vrije dagen op $day[name].";
-            var_dump($message);
-        }
-
-        $hoursToWork = "Je werkt in totaal " . $hoursToWork . " uur per week.";
-
-        var_dump($hoursToWork);
-
-
-        return response()->json([$week]);
+        return response()->json($week);
     }
 
     public function GetFreeDays(int $year)
@@ -87,10 +74,6 @@ class WelkeDagenWerkenController extends Controller
         foreach($holidays as $day)
         {
             $week[$day->dayOfWeek]['freeDays']++;
-            var_dump($day->dayName);
-            var_dump($day->day);
-            var_dump($day->monthName);
-            var_dump($day->year);
         }
 
         usort($week, function($a, $b) {
