@@ -14,16 +14,19 @@ class WelkeDagenWerkenController extends Controller
 
         $week = $this->GetFreeDays($year);
 
-            foreach($week as $day)
+        $index = 0;
+        foreach($week as $day)
+        {
+            while($day['workHours'] < 8 && $remainingHoursToWork > 0 && $day['name'] != 'zondag' && $day['name'] != 'zaterdag')
             {
-                while($day['workHours'] < 8 && $remainingHoursToWork > 0)
-                {
-                    $day['workHours']++;
-                    $remainingHoursToWork--;
-                }
-                $message = "Werk $day[workHours] uur op $day[name].";
-                var_dump($message);
+                $week[$index]['workHours']++;
+                $day['workHours']++;
+                $remainingHoursToWork--;
             }
+            $message = "Werk $day[workHours] uur op $day[name].";
+            var_dump($message);
+            $index++;
+        }
 
         foreach($week as $day)
         {
@@ -34,6 +37,9 @@ class WelkeDagenWerkenController extends Controller
         $hoursToWork = "Je werkt in totaal " . $hoursToWork . " uur per week.";
 
         var_dump($hoursToWork);
+
+
+        return response()->json([$week]);
     }
 
     public function GetFreeDays(int $year)
@@ -76,19 +82,68 @@ class WelkeDagenWerkenController extends Controller
             ),
         );
 
-        // mogelijk ophalen vanuit database
+        $holidays = $this->GetHolidays($year);
 
-        // Nieuwjaarsdag: 1 januari 2022
-        $date = new Carbon("$year-01-01");
-        $week[$date->dayOfWeek]['freeDays']++;
-        // Goede vrijdag: eerste vrijdag voor pasen . 15 april 2022
-        $date = new Carbon("$year-04-15");
-        $week[$date->dayOfWeek]['freeDays']++;
-        // eerste paasdag: eerste zondag na eerste volle maan in de lente
+        foreach($holidays as $day)
+        {
+            $week[$day->dayOfWeek]['freeDays']++;
+            var_dump($day->dayName);
+            var_dump($day->day);
+            var_dump($day->monthName);
+            var_dump($day->year);
+        }
+
+        usort($week, function($a, $b) {
+            return $a['freeDays'] <=> $b['freeDays'];
+        });
+
+        $week = array_reverse($week);
+
+        return $week;
+    }
+
+    public function GetHolidays($year)
+    {
+        $newYearsDay = new Carbon("$year-01-01");
+        $goodFriday = new Carbon("$year-04-02");
+        $firstEasterday = $this->GetEasterDate($year);
+        $secondEasterday = clone $firstEasterday;
+        $secondEasterday->addDay();
+        $kingsDay = $this->GetKingsDay(new Carbon("$year-04-27"));
+        $liberationDay = new Carbon("$year-05-05");
+        $accensionDay = clone $firstEasterday;
+        $accensionDay->addDays(39);
+        $firstPentecost = clone $firstEasterday;
+        $firstPentecost->addDays(49);
+        $secondPentecost = clone $firstPentecost;
+        $secondPentecost->addDay();
+        $firstChristmasDay = new Carbon("$year-12-25");
+        $secondChristmasDay = clone $firstChristmasDay;
+        $secondChristmasDay->addDay();
+
+        $holidays = array(
+            $newYearsDay,
+            $goodFriday,
+            $firstEasterday,
+            $secondEasterday,
+            $kingsDay,
+            $liberationDay,
+            $accensionDay,
+            $firstPentecost,
+            $secondPentecost,
+            $firstChristmasDay,
+            $secondChristmasDay,
+        );
+
+        return $holidays;
+    }
+
+    public function GetEasterDate(int $year)
+    {
         // formule bron: https://nl.wikipedia.org/wiki/Paas-_en_pinksterdatum
         $A = $year;
         $G = ($A%19)+1;
-        $C = floor($year/100)+1;
+        $C = floor($A/100)+1;
         $X = floor(3*$C/4)-12;
         $Y = floor((8*$C+5)/25)-5;
         $Z = floor(5*$A/4)-10-$X;
@@ -99,49 +154,17 @@ class WelkeDagenWerkenController extends Controller
         $P = $N+7-(($Z+$N)%7);
         $M = 3;
         if($P>31){ $P = $P-31; $M++;}
-        $test = new Carbon("$A-$M-$P");
-        var_dump($test->dayName);
-        var_dump($test->day);
-        var_dump($test->monthName);
-        var_dump($test->year);
+        $easterDate = new Carbon("$A-$M-$P");
 
-        // $date = new Carbon("$year-04-17");
-        $week[$date->dayOfWeek]['freeDays']++;
-        // Tweede Paasdag: na eerste paasdag
-        $date->addDay();
-        $week[$date->dayOfWeek]['freeDays']++;
-        // Hemelvaartsdag: 40 dagen na eerste paasdag
-        $date->addDays(38);
-        $week[$date->dayOfWeek]['freeDays']++;
-        // Eerste Pinksterdag: 10 dagen na Hemelvaartsdag
-        $date->addDays(10);
-        $week[$date->dayOfWeek]['freeDays']++;
-        // Tweede Pinksterdag: na Eerste Pinksterdag
-        $date->addDay();
-        $week[$date->dayOfWeek]['freeDays']++;
-        // Koningsdag: 27 april tenzij dat zondag is.
-        $date = new Carbon("$year-04-27");
+        return $easterDate;
+    }
+
+    public function GetKingsDay(Carbon $date)
+    {
         if($date->dayOfWeek == 0)
         {
             $date->addDays(-1); // als de 27e een zondag is.
         }
-        $week[$date->dayOfWeek]['freeDays']++;
-        // Bevrijdingsdag: 5 mei 2022
-        $date = new Carbon("$year-05-05");
-        $week[$date->dayOfWeek]['freeDays']++;
-        // Eerste Kerstdag: 25 december 2022
-        $date = new Carbon("$year-12-25");
-        $week[$date->dayOfWeek]['freeDays']++;
-        // tweede Kerstdag: na eerste Kerstdag
-        $date->addDay();
-        $week[$date->dayOfWeek]['freeDays']++;
-
-        usort($week, function($a, $b) {
-            return $a['freeDays'] <=> $b['freeDays'];
-        });
-
-        $week = array_reverse($week);
-
-        return $week;
+        return $date;
     }
 }
