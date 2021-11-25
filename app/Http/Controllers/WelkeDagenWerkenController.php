@@ -26,7 +26,19 @@ class WelkeDagenWerkenController extends Controller
             $index++;
         }
 
-        return response()->json($week);
+        $data = array(
+            'workDays' => array(),
+        );
+
+        foreach($week as $day)
+        {
+            if($day['workHours'] > 0)
+            {
+                array_push($data['workDays'], $day);
+            }
+        }
+
+        return response()->json($data);
     }
 
     public function GetFreeDays(int $year)
@@ -137,6 +149,7 @@ class WelkeDagenWerkenController extends Controller
         $P = $N+7-(($Z+$N)%7);
         $M = 3;
         if($P>31){ $P = $P-31; $M++;}
+
         $easterDate = new Carbon("$A-$M-$P");
 
         return $easterDate;
