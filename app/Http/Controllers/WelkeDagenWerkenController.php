@@ -10,7 +10,7 @@ class WelkeDagenWerkenController extends Controller
 {
     public function CalcBestWorkDays(int $hoursToWork, int $year)
     {
-        $remainingHoursToWork = $hoursToWork;
+        $remainingHoursToWork =     $hoursToWork;
 
         $week = $this->GetFreeDays($year);
 
